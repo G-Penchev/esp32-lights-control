@@ -30,8 +30,8 @@ bool touchDetected = false;
 bool ledOn = false;
 
 //SSID and Password of your WiFi router
-const char* ssid = "icecream3";
-const char* password = "sladoled_89";
+const char* ssid = "cocoapop_deco";
+const char* password = "BruteForce_8991";
 
 //Declare a global object variable from the ESP8266WebServer class.
 WebServer server(80); //Server on port 80
