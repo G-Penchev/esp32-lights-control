@@ -130,17 +130,17 @@ void loop(void) {
             // Long press action
             while (senseTouch(34)) {
                 if (!dimmingHigh && ledState > 0) {
-                    ledState -= 1;
+                    ledState -= ledState < 10 ? 1 : ledState / 10;
                     ledcWrite(PWM1_Ch, ledState);
                     Serial.print("Dimming Low ");
                     Serial.println(ledState);
                 } else if (dimmingHigh && ledState < maxLedIntensity) {
-                    ledState += 1;
+                    ledState += ledState < 10 ? 1 : ledState / 10;
                     ledcWrite(PWM1_Ch, ledState);
                     Serial.print("Dimming High ");
                     Serial.println(ledState);
                 }
-                delay(20);
+                delay(30);
             }
             dimmingHigh = !dimmingHigh;
         } else {
@@ -161,11 +161,11 @@ void loop(void) {
     if (iterate && switching) {
         if (ledState < maxLedIntensity && turnOnLed) {
             dimmingHigh = false;
-            ledState += 1;
+            ledState += ledState < 10 ? 1 : ledState / 10;
             ledcWrite(PWM1_Ch, ledState);
         } else if (ledState > 0 && !turnOnLed) {
             dimmingHigh = true;
-            ledState -= 1;
+            ledState -= ledState < 10 ? 1 : ledState / 10;
             ledcWrite(PWM1_Ch, ledState);
         } else {
             switching = false;
