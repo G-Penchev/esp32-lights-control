@@ -11,10 +11,10 @@
 #define LED_WIFI   23
 #define PWM1_Ch    0
 #define PWM1_Res   8
-#define PWM1_Freq  1000
+#define PWM1_Freq  5000
 
 int ledState = 0;
-int maxLedIntensity = 255;
+int maxLedIntensity = 200;
 
 long previousMillis = 0;
 
@@ -73,6 +73,8 @@ void setup(void) {
 
   pinMode(LED_WIFI, OUTPUT);
 
+  pinMode(34, INPUT);
+  
   // Wait for connection
   while (WiFi.status() != WL_CONNECTED) {
     digitalWrite(LED_WIFI, LOW);
@@ -100,16 +102,15 @@ void setup(void) {
 
 bool senseTouch(uint8_t pin) {
 
-  if (touchRead(pin) < 30) {
+  if (analogRead(pin) < 30) {
     int touch_debounced = 0;
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 5; i++) {
       delay(2);
-      touch_debounced += touchRead(pin);
+      touch_debounced += analogRead(pin);
     }
-    touch_debounced = touch_debounced / 3;
+    touch_debounced = touch_debounced / 5;
 
     if (touch_debounced < 20) {
-      Serial.println("Touch Detected");
       return true;
     } else {
       return false;
@@ -124,24 +125,23 @@ bool senseTouch(uint8_t pin) {
 void loop(void) {
   server.handleClient();          //Handle client requests
 
-  if (senseTouch(T4)) {
+  if (senseTouch(34)) {
     delay(250);
-    if (senseTouch(T4)) {
+    if (senseTouch(34)) {
       //Long press action
-      while (senseTouch(T4)) {
+      while (senseTouch(34)) {
         if (!dimmingHigh && ledState > 0) {
           ledState -= 1;
           ledcWrite(PWM1_Ch, ledState);
-          delay(20);
           Serial.print("Dimming Low ");
           Serial.println(ledState);
         } else if (dimmingHigh && ledState < maxLedIntensity) {
           ledState += 1;
           ledcWrite(PWM1_Ch, ledState);
-          delay(20);
           Serial.print("Dimming High ");
           Serial.println(ledState);
         }
+        delay(20);
       }
       dimmingHigh = !dimmingHigh;
     } else {
