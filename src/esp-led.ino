@@ -10,11 +10,11 @@
 #define LED_GPIO 16
 #define LED_WIFI 23
 #define PWM1_Ch 0
-#define PWM1_Res 8
-#define PWM1_Freq 5000
+#define PWM1_Res 16
+#define PWM1_Freq 1000
 
 int ledState = 0;
-int maxLedIntensity = 200;
+int maxLedIntensity = 65535;
 
 long previousMillis = 0;
 
@@ -118,6 +118,16 @@ bool senseTouch(uint8_t pin) {
     return false;
 }
 
+int calcIncrement(int currentValue) {
+    if (currentValue < 10 || currentValue == maxLedIntensity) {
+        return 1;
+    } else if (currentValue + currentValue / 10 > maxLedIntensity) {
+        return maxLedIntensity - currentValue;
+    } else {
+        return currentValue / 10;
+    }
+}
+
 //==============================================================
 //                     LOOPsdad
 //==============================================================
@@ -130,17 +140,17 @@ void loop(void) {
             // Long press action
             while (senseTouch(34)) {
                 if (!dimmingHigh && ledState > 0) {
-                    ledState -= ledState < 10 ? 1 : ledState / 10;
+                    ledState -= calcIncrement(ledState);
                     ledcWrite(PWM1_Ch, ledState);
                     Serial.print("Dimming Low ");
                     Serial.println(ledState);
                 } else if (dimmingHigh && ledState < maxLedIntensity) {
-                    ledState += ledState < 10 ? 1 : ledState / 10;
+                    ledState += calcIncrement(ledState);
                     ledcWrite(PWM1_Ch, ledState);
                     Serial.print("Dimming High ");
                     Serial.println(ledState);
                 }
-                delay(30);
+                delay(10);
             }
             dimmingHigh = !dimmingHigh;
         } else {
@@ -161,11 +171,11 @@ void loop(void) {
     if (iterate && switching) {
         if (ledState < maxLedIntensity && turnOnLed) {
             dimmingHigh = false;
-            ledState += ledState < 10 ? 1 : ledState / 10;
+            ledState += calcIncrement(ledState);
             ledcWrite(PWM1_Ch, ledState);
         } else if (ledState > 0 && !turnOnLed) {
             dimmingHigh = true;
-            ledState -= ledState < 10 ? 1 : ledState / 10;
+            ledState -= calcIncrement(ledState);
             ledcWrite(PWM1_Ch, ledState);
         } else {
             switching = false;
