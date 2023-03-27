@@ -8,8 +8,8 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "c:/Users/Pench/Documents/PlatformIO/Projects/230328-001907-esp32doit-devkit-v1/include",
-                "c:/Users/Pench/Documents/PlatformIO/Projects/230328-001907-esp32doit-devkit-v1/src",
+                "d:/Creativity/Home Automation/Lighting/esp32-lights-control/include",
+                "d:/Creativity/Home Automation/Lighting/esp32-lights-control/src",
                 "C:/Users/Pench/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
                 "C:/Users/Pench/.platformio/packages/framework-arduinoespressif32/libraries/FS/src",
                 "C:/Users/Pench/.platformio/packages/framework-arduinoespressif32/libraries/ESPmDNS/src",
@@ -239,8 +239,8 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "c:/Users/Pench/Documents/PlatformIO/Projects/230328-001907-esp32doit-devkit-v1/include",
-                    "c:/Users/Pench/Documents/PlatformIO/Projects/230328-001907-esp32doit-devkit-v1/src",
+                    "d:/Creativity/Home Automation/Lighting/esp32-lights-control/include",
+                    "d:/Creativity/Home Automation/Lighting/esp32-lights-control/src",
                     "C:/Users/Pench/.platformio/packages/framework-arduinoespressif32/libraries/WebServer/src",
                     "C:/Users/Pench/.platformio/packages/framework-arduinoespressif32/libraries/FS/src",
                     "C:/Users/Pench/.platformio/packages/framework-arduinoespressif32/libraries/ESPmDNS/src",

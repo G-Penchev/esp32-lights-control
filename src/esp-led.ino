@@ -124,8 +124,7 @@ bool senseTouch(uint8_t pin) {
 //==============================================================
 void loop(void) {
   server.handleClient();          //Handle client requests
-  boolean touchEvent
-  
+
   if (senseTouch(34)) {
     delay(250);
     if (senseTouch(34)) {
