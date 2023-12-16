@@ -1,191 +1,103 @@
-#include <ESPmDNS.h>
-#include <WebServer.h>
-#include <WiFi.h>
-#include <WiFiClient.h>
+#include <Arduino.h>
 
-#include "webpage.h"
+const int numButtons = 1;
+const int buttonPins[numButtons] = {34};
+const int ledPins[numButtons] = {16};
+bool buttonState[numButtons] = {false};
+bool lastButtonState[numButtons] = {false};
+unsigned long buttonPressStartTime[numButtons] = {0};
+unsigned long buttonPressDuration[numButtons] = {0};
+bool longPressActive[numButtons] = {false};
+bool ledState[numButtons] = {false};
+bool dimmingDirection[numButtons] = {true}; // true for increasing, false for decreasing
+int brightness[numButtons] = {0};
+const int fadeStep = 1; // Adjust the step size for fading
 
-// On board LED Connected to GPIO2
+const int freq = 5000;
+const int resolution = 10;
 
-#define LED_GPIO 16
-#define LED_WIFI 23
-#define PWM1_Ch 0
-#define PWM1_Res 16
-#define PWM1_Freq 1000
-
-int ledState = 0;
-int maxLedIntensity = 65535;
-
-long previousMillis = 0;
-
-int inputDebounce;
-int debounceSamples = 0;
-
-// State flags
-bool iterate = false;
-bool turnOnLed = false;
-bool switching = false;
-bool dimmingHigh = false;
-bool touchDetected = false;
-bool ledOn = false;
-
-// SSID and Password of your WiFi router
-const char* ssid = "cocoapop_deco";
-const char* password = "BruteForce_8991";
-
-// Declare a global object variable from the ESP8266WebServer class.
-WebServer server(80);  // Server on port 80
-
-//===============================================================
-// This routine is executed when you open its IP in browser
-//===============================================================
-void handleRoot() {
-    Serial.println("You called root page");
-    String s = MAIN_page;              // Read HTML contents
-    server.send(200, "text/html", s);  // Send web page
-}
-
-void handleLEDon() {
-    Serial.println("LED on page");
-    turnOnLed = true;
-    switching = true;
-    server.send(200, "text/html", MAIN_page);
-}
-
-void handleLEDoff() {
-    Serial.println("LED off page");
-    turnOnLed = false;
-    switching = true;
-    server.send(200, "text/html", MAIN_page);
-}
-//==============================================================
-//                  SETUP
-//==============================================================
-void setup(void) {
+void setup()
+{
     Serial.begin(115200);
 
-    WiFi.begin(ssid, password);  // Connect to your WiFi router
-    Serial.println("");
-
-    // Onboard LED port Direction output
-    ledcAttachPin(LED_GPIO, PWM1_Ch);
-    ledcSetup(PWM1_Ch, PWM1_Freq, PWM1_Res);
-
-    pinMode(LED_WIFI, OUTPUT);
-
-    pinMode(34, INPUT);
-
-    // Wait for connection
-    while (WiFi.status() != WL_CONNECTED) {
-        digitalWrite(LED_WIFI, LOW);
-        delay(150);
-        Serial.print(".");
-        digitalWrite(LED_WIFI, HIGH);
-        delay(150);
-    }
-
-    // If connection successful show IP address in serial monitor
-    Serial.println("");
-    digitalWrite(LED_WIFI, HIGH);
-    Serial.print("Connected to ");
-    Serial.println(ssid);
-    Serial.print("IP address: ");
-    Serial.println(WiFi.localIP());  // IP address assigned to your ESP
-
-    server.on("/", handleRoot);
-    server.on("/ledOn", handleLEDon);
-    server.on("/ledOff", handleLEDoff);
-
-    server.begin();
-    Serial.println("HTTP server started");
-}
-
-bool senseTouch(uint8_t pin) {
-    if (analogRead(pin) < 30) {
-        int touch_debounced = 0;
-        for (int i = 0; i < 5; i++) {
-            delay(2);
-            touch_debounced += analogRead(pin);
-        }
-        touch_debounced = touch_debounced / 5;
-
-        if (touch_debounced < 20) {
-            return true;
-        } else {
-            return false;
-        }
-    }
-    return false;
-}
-
-int calcIncrement(int currentValue) {
-    if (currentValue < 10 || currentValue == maxLedIntensity) {
-        return 1;
-    } else if (currentValue + currentValue / 10 > maxLedIntensity) {
-        return maxLedIntensity - currentValue;
-    } else {
-        return currentValue / 10;
+    for (int i = 0; i < numButtons; i++)
+    {
+        pinMode(buttonPins[i], INPUT_PULLUP);
+        ledcSetup(i, freq, resolution);
+        ledcAttachPin(ledPins[i], i);
     }
 }
 
-//==============================================================
-//                     LOOPsdad
-//==============================================================
-void loop(void) {
-    server.handleClient();  // Handle client requests
+void loop()
+{
+    delay(5);
+    for (int i = 0; i < numButtons; i++)
+    {
+        buttonState[i] = digitalRead(buttonPins[i]);
+        if (buttonState[i] == LOW)
+        {
 
-    if (senseTouch(34)) {
-        delay(250);
-        if (senseTouch(34)) {
-            // Long press action
-            while (senseTouch(34)) {
-                if (!dimmingHigh && ledState > 0) {
-                    ledState -= calcIncrement(ledState);
-                    ledcWrite(PWM1_Ch, ledState);
-                    Serial.print("Dimming Low ");
-                    Serial.println(ledState);
-                } else if (dimmingHigh && ledState < maxLedIntensity) {
-                    ledState += calcIncrement(ledState);
-                    ledcWrite(PWM1_Ch, ledState);
-                    Serial.print("Dimming High ");
-                    Serial.println(ledState);
-                }
-                delay(10);
+            if (lastButtonState[i] == HIGH)
+            {
+                buttonPressStartTime[i] = millis();
+                Serial.print("State changed = ");
+                Serial.println(buttonState[i]);
             }
-            dimmingHigh = !dimmingHigh;
-        } else {
-            // Tap actions
-            turnOnLed = ledState == 0;
-            switching = !switching;
-            Serial.println("Switching");
+
+            // Check for long press
+
+            buttonPressDuration[i] = millis() - buttonPressStartTime[i];
+            if (buttonPressDuration[i] > 250 && !longPressActive[i])
+            {
+                // Long press
+                longPressActive[i] = true;
+                dimmingDirection[i] = !dimmingDirection[i]; // Toggle dimming direction
+                Serial.print("Dimming dir changed = ");
+                Serial.println(dimmingDirection[i]);
+            }
+
+            // Dimming logic for long press
+            if (longPressActive[i])
+            {
+                if (dimmingDirection[i] && brightness[i] < 1023)
+                {
+                    brightness[i] += fadeStep;
+                }
+                else if (!dimmingDirection[i] && brightness[i] > 0)
+                {
+                    brightness[i] -= fadeStep;
+                }
+                ledState[i] = brightness[i] != 0;
+                dimLed(brightness[i], i);
+            }
         }
-    }
-
-    unsigned long currentMillis = millis();
-
-    if (currentMillis - previousMillis >= 10) {
-        previousMillis = currentMillis;
-        iterate = true;
-    }
-
-    if (iterate && switching) {
-        if (ledState < maxLedIntensity && turnOnLed) {
-            dimmingHigh = false;
-            ledState += calcIncrement(ledState);
-            ledcWrite(PWM1_Ch, ledState);
-        } else if (ledState > 0 && !turnOnLed) {
-            dimmingHigh = true;
-            ledState -= calcIncrement(ledState);
-            ledcWrite(PWM1_Ch, ledState);
-        } else {
-            switching = false;
+        else
+        {
+            if (buttonPressDuration[i] < 250 && buttonPressDuration[i] > 20)
+            {
+                // Short press
+                Serial.print("Short press detected = ");
+                Serial.println(ledState[i]);
+                ledState[i] = !ledState[i];
+                dimmingDirection[i] = ledState[i];
+                brightness[i] = ledState[i] ? 1023 : 0;
+                dimLed(brightness[i], i);
+            }
+            // Button released
+            longPressActive[i] = false;
+            buttonPressDuration[i] = 0;
         }
+
+        lastButtonState[i] = buttonState[i];
     }
-    iterate = false;
-    if (ledState > maxLedIntensity) {
-        ledState = maxLedIntensity;
-    }
-    if (ledState < 0) {
-        ledState = 0;
-    }
+}
+
+void dimLed(int value, int channel){
+    Serial.print("Dim set to = ");
+    Serial.print(value);
+    Serial.print(" and mappedValue set to = ");
+
+    int mappedValue = int(pow(2, value / 102.3) - 1);
+    Serial.println(mappedValue);
+    ledcWrite(channel, mappedValue);
 }
